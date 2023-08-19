@@ -1,0 +1,19 @@
+{
+  "name": "aig.ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Manju2367/ArtifacterImageGenForTS.git"
+  },
+  "author": "koshianmanju",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Manju2367/ArtifacterImageGenForTS/issues"
+  },
+  "homepage": "https://github.com/Manju2367/ArtifacterImageGenForTS#readme"
+}

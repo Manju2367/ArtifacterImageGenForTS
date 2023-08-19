@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "npx tsc && node test/test.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/Manju2367/ArtifacterImageGenForTS/issues"
   },
-  "homepage": "https://github.com/Manju2367/ArtifacterImageGenForTS#readme"
+  "homepage": "https://github.com/Manju2367/ArtifacterImageGenForTS#readme",
+  "dependencies": {
+    "@types/node": "^20.5.1",
+    "axios": "^1.4.0"
+  }
 }

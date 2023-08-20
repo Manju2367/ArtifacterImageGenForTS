@@ -5,7 +5,7 @@
 ## Installation
 
 ```
-npm i aig.js
+npm i artifacter.js
 ```
 
 ## Usage
@@ -13,14 +13,14 @@ npm i aig.js
 何故か一回ですべてダウンロードできないので、数回このスクリプトを実行して、コンソールにログが流れなくなるまで実行してください。
 
 ```
-node node_modules/aig.js/dlAssets.js
+node node_modules/artifacter.js/dlAssets.js
 ```
 
 [enka-network-api](https://www.npmjs.com/package/enka-network-api)(必須)でユーザー情報をフェッチし、[sharp](https://www.npmjs.com/package/sharp)で画像を保存する例。
 ```js
 import { EnkaClient, Character, DetailedUser } from "enka-network-api"
 import sharp from "sharp"
-import { generate } from "aig.js"
+import { generate } from "artifacter.js"
 import { exit } from "process"
 
 

@@ -1,7 +1,7 @@
 import path from "path"
 import { Artifact, Character, EnkaClient, EquipType, FightProp } from "enka-network-api"
 import sharp from "sharp"
-import { TextToImage, mask, createImage } from "sharp-utils"
+import { TextToImage, mask, createImage, roundedRect } from "sharp-utils"
 import { exit } from "process"
 
 
@@ -25,7 +25,13 @@ const baseSize = {
     height: 1080
 }
 
-const textToImage = new TextToImage(fontPath)
+const textToImage = new TextToImage(fontPath, {
+    anchor: "left top",
+    attributes: {
+        fill: "#FFFFFF",
+        stroke: "none"
+    }
+})
 
 const fightProp: {
     [key in FightProp]: string
@@ -282,16 +288,16 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
     const weaponRarelity            = weapon.weaponData.stars
     const weaponBaseAtk             = weapon.weaponStats[0].getMultipliedValue().toFixed()
     const weaponSubStatusName       = weapon.weaponStats[1] ?
-                                        weapon.weaponStats[1].fightPropName.get("jp") :
-                                        undefined
+                                      weapon.weaponStats[1].fightPropName.get("jp") :
+                                      ""
     const weaponSubStatusValue      = weapon.weaponStats[1] ?
-                                        weapon.weaponStats[1].isPercent ?
-                                        weapon.weaponStats[1].getMultipliedValue().toFixed(1) :
-                                        weapon.weaponStats[1].getMultipliedValue().toFixed() :
-                                        undefined
+                                      weapon.weaponStats[1].isPercent ?
+                                      weapon.weaponStats[1].getMultipliedValue().toFixed(1) :
+                                      weapon.weaponStats[1].getMultipliedValue().toFixed() :
+                                      ""
     const weaponSubStatusType       = weapon.weaponStats[1] ?
-                                        weapon.weaponStats[1].fightPropName.get("jp") :
-                                        undefined
+                                      weapon.weaponStats[1].fightPropName.get("jp") :
+                                      ""
 
     // 聖遺物
     const artifacts: Array<Artifact|null> = [null, null, null, null, null]
@@ -364,12 +370,78 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
 
 
 
+    // 武器
+    let weaponImage = sharp(path.join(weaponPath, `${ weaponName }.png`))
+        .resize(128, 128)
+    let weaponPaste = createImage(baseSize.width, baseSize.height)
+
+    let weaponNameImage = textToImage.getSharp(weaponName, "png", {
+        fontSize: 26,
+        y: -26
+    })
+    let weaponLevelImage = textToImage.getSharp(`Lv.${ weaponLevel }`, "png", {
+        fontSize: 24,
+        y: -24
+    })
+    let rectWeaponLevel = roundedRect(((await weaponLevelImage.metadata()).width ?? 0) + 4, 28, 0, 0, 1)
+    
+
+    let baseAttackIcon = sharp(path.join(emotePath, "基礎攻撃力.png"))
+        .resize(23, 23)
+    let weaponBaseAttackImage = textToImage.getSharp(`基礎攻撃力  ${ weaponBaseAtk }`, "png", {
+        fontSize: 23,
+        y: -23
+    })
+
+    let rectWeaponRank = roundedRect(40, 25, 0, 0, 1)
+    let weaponRankImage = textToImage.getSharp(`R${ weaponRank }`, "png", {
+        fontSize: 24,
+        y: -24
+    })
+
+    let weaponPasteList = []
+    weaponPasteList.push(
+        { input: await weaponImage.toBuffer(), left: 1430, top: 50 },
+        { input: await weaponNameImage.toBuffer(), left: 1582, top: 47 },
+        { input: await rectWeaponLevel.toBuffer(), left: 1582, top: 80 },
+        { input: await weaponLevelImage.toBuffer(), left: 1584, top: 82 },
+        { input: await baseAttackIcon.toBuffer(), left: 1600, top: 120 },
+        { input: await weaponBaseAttackImage.toBuffer(), left: 1623, top: 120 },
+        { input: await rectWeaponRank.toBuffer(), left: 1430, top: 45 },
+        { input: await weaponRankImage.toBuffer(), left: 1433, top: 46 }
+    )
+    
+    if(weaponSubStatusValue) {
+        let weaponSubStatusIcon = sharp(path.join(emotePath, `${ ["HP", "攻撃力", "防御力"].includes(weaponSubStatusType) ? statusNameMap[weaponSubStatusType].long : weaponSubStatusType }.png`))
+            .resize(23, 23)
+        let weaponSubStatusImage = textToImage.getSharp(`${ Object.keys(statusNameMap).includes(weaponSubStatusName) ? statusNameMap[weaponSubStatusName].short : weaponSubStatusName }  ${ weaponSubStatusValue }${ weapon.weaponStats[1].isPercent ? "%" : "" }`, "png", {
+            fontSize: 23,
+            y: -23
+        })
+
+        weaponPasteList.push(
+            { input: await weaponSubStatusIcon.toBuffer(), left: 1600, top: 155 },
+            { input: await weaponSubStatusImage.toBuffer(), left: 1623, top: 155 }
+        )
+    }
+
+    weaponPaste.composite(weaponPasteList)
+
+    let weaponRareImage = sharp(path.join(assetsPath, "Rarelity", `${ weaponRarelity }.png`))
+    weaponRareImage.resize(Math.floor(((await weaponRareImage.metadata()).width ?? 0) * 0.97))
+    let weaponRarePaste = createImage(baseSize.width, baseSize.height)
+    
+    weaponRarePaste
+        .composite([{ input: await weaponRareImage.toBuffer(), left: 1422, top: 173 }])
+
+
+
     return base.composite(
         [
             { input: await characterPaste.toBuffer(), left: 0, top: 0 },
             { input: await shadow.toBuffer(), left: 0, top: 0},
-            // { input: await weaponPaste.toBuffer(), left: 0, top: 0},
-            // { input: await weaponRarePaste.toBuffer(), left: 0, top: 0},
+            { input: await weaponPaste.toBuffer(), left: 0, top: 0},
+            { input: await weaponRarePaste.toBuffer(), left: 0, top: 0},
             // { input: await talentBasePaste.toBuffer(), left: 0, top: 0},
             // { input: await constBasePaste.toBuffer(), left: 0, top: 0},
             // { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},

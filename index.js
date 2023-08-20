@@ -475,6 +475,93 @@ const generate = async (character, calcType = "atk") => {
         { input: await elementalSkillLevelImage.toBuffer(), left: 42, top: 502 },
         { input: await elementalBurstLevelImage.toBuffer(), left: 42, top: 607 }
     ]);
+    // キャラクターステータス
+    let characterStatusPaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
+    let characterStatusPasteList = [];
+    // HP
+    let baseHealthImage = textToImage.getSharp(characterBaseHealth, "png", {
+        fontSize: 12,
+        y: -12
+    });
+    let addHealthImage = textToImage.getSharp(`+${characterAddHealth}`, "png", {
+        fontSize: 12,
+        y: -12,
+        attributes: {
+            fill: "#0F0"
+        }
+    });
+    let maxHealthImage = textToImage.getSharp(characterMaxHealth, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 攻撃力
+    let baseAttackImage = textToImage.getSharp(characterBaseAttack, "png", {
+        fontSize: 12,
+        y: -12
+    });
+    let addAttackImage = textToImage.getSharp(`+${characterAddAttack}`, "png", {
+        fontSize: 12,
+        y: -12,
+        attributes: {
+            fill: "#0F0"
+        }
+    });
+    let attackImage = textToImage.getSharp(characterAttack, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 防御力
+    let baseDefenseImage = textToImage.getSharp(characterBaseDefense, "png", {
+        fontSize: 12,
+        y: -12
+    });
+    let addDefenseImage = textToImage.getSharp(`+${characterAddDefense}`, "png", {
+        fontSize: 12,
+        y: -12,
+        attributes: {
+            fill: "#0F0"
+        }
+    });
+    let defenseImage = textToImage.getSharp(characterDefense, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 元素熟知
+    let elementMasteryImage = textToImage.getSharp(characterElementMastery, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 会心率
+    let critRateImage = textToImage.getSharp(`${characterCritRate}%`, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 会心ダメージ
+    let critDamageImage = textToImage.getSharp(`${characterCritDamage}%`, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    // 元素チャージ効率
+    let chargeEfficiencyImage = textToImage.getSharp(`${characterChargeEfficiency}%`, "png", {
+        fontSize: 26,
+        y: -26
+    });
+    characterStatusPasteList.push({ input: await baseHealthImage.toBuffer(), left: 1360 - ((await baseHealthImage.metadata()).width ?? 0) - ((await addHealthImage.metadata()).width ?? 0) - 1, top: 97 + 70 * 0 }, { input: await addHealthImage.toBuffer(), left: 1360 - ((await addHealthImage.metadata()).width ?? 0), top: 97 + 70 * 0 }, { input: await maxHealthImage.toBuffer(), left: 1360 - ((await maxHealthImage.metadata()).width ?? 0), top: 67 + 70 * 0 }, { input: await baseAttackImage.toBuffer(), left: 1360 - ((await baseAttackImage.metadata()).width ?? 0) - ((await addAttackImage.metadata()).width ?? 0) - 1, top: 97 + 70 * 1 }, { input: await addAttackImage.toBuffer(), left: 1360 - ((await addAttackImage.metadata()).width ?? 0), top: 97 + 70 * 1 }, { input: await attackImage.toBuffer(), left: 1360 - ((await attackImage.metadata()).width ?? 0), top: 67 + 70 * 1 }, { input: await baseDefenseImage.toBuffer(), left: 1360 - ((await baseDefenseImage.metadata()).width ?? 0) - ((await addDefenseImage.metadata()).width ?? 0) - 1, top: 97 + 70 * 2 }, { input: await addDefenseImage.toBuffer(), left: 1360 - ((await addDefenseImage.metadata()).width ?? 0), top: 97 + 70 * 2 }, { input: await defenseImage.toBuffer(), left: 1360 - ((await defenseImage.metadata()).width ?? 0), top: 67 + 70 * 2 }, { input: await elementMasteryImage.toBuffer(), left: 1360 - ((await elementMasteryImage.metadata()).width ?? 0), top: 67 + 70 * 3 }, { input: await critRateImage.toBuffer(), left: 1360 - ((await critRateImage.metadata()).width ?? 0), top: 67 + 70 * 4 }, { input: await critDamageImage.toBuffer(), left: 1360 - ((await critDamageImage.metadata()).width ?? 0), top: 67 + 70 * 5 }, { input: await chargeEfficiencyImage.toBuffer(), left: 1360 - ((await chargeEfficiencyImage.metadata()).width ?? 0), top: 67 + 70 * 6 });
+    // 元素ダメージ, 治療効果
+    if (characterMaxValueStatus.value > 0) {
+        let maxValueStatusIcon = (0, sharp_1.default)(path_1.default.join(emotePath, `${characterMaxValueStatus.name}.png`))
+            .resize(40, 40);
+        let maxValueStatusNameImage = textToImage.getSharp(characterMaxValueStatus.name, "png", {
+            fontSize: 27,
+            y: -27
+        });
+        let maxValueStatusImage = textToImage.getSharp(`${characterMaxValueStatus.value.toFixed(1)}%`, "png", {
+            fontSize: 26,
+            y: -26
+        });
+        characterStatusPasteList.push({ input: await maxValueStatusIcon.toBuffer(), left: 787, top: 62 + 70 * 7 }, { input: await maxValueStatusNameImage.toBuffer(), left: 845, top: 67 + 70 * 7 }, { input: await maxValueStatusImage.toBuffer(), left: 1360 - ((await maxValueStatusImage.metadata()).width ?? 0), top: 67 + 70 * 7 });
+    }
+    characterStatusPaste.composite(characterStatusPasteList);
     return base.composite([
         { input: await characterPaste.toBuffer(), left: 0, top: 0 },
         { input: await shadow.toBuffer(), left: 0, top: 0 },
@@ -483,7 +570,7 @@ const generate = async (character, calcType = "atk") => {
         { input: await talentBasePaste.toBuffer(), left: 0, top: 0 },
         { input: await constBasePaste.toBuffer(), left: 0, top: 0 },
         { input: await characterInfoPaste.toBuffer(), left: 0, top: 0 },
-        // { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
+        { input: await characterStatusPaste.toBuffer(), left: 0, top: 0 },
         // { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
         // { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
         // { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},

@@ -150,13 +150,26 @@ const composite = async (image1, image2, x = 0, y = 0) => {
     if (image2 instanceof Array) {
         return (0, sharp_1.default)(await (0, sharp_1.default)(await image1.toBuffer()).composite(image2).toBuffer()).png();
     }
-    else {
+    else if (image2 instanceof sharp_1.default) {
         return (0, sharp_1.default)(await (0, sharp_1.default)(await image1.toBuffer()).composite([{
                 input: await image2.toBuffer(),
                 left: x,
                 top: y
             }]).toBuffer()).png();
     }
+};
+/**
+ *
+ * @param num
+ * @param round
+ * @returns
+ */
+const commaSplittedNumber = (num, round = -1) => {
+    let str = round >= 0 ? (Math.round(num * 10 ** round) / 10 ** round).toLocaleString() : num.toLocaleString();
+    let strS = str.split(".")[1];
+    if (round > 0)
+        str = `${str}${strS === undefined ? "." : ""}${strS === undefined ? Array(round + 1).join("0") : Array(round - strS.length + 1).join("0")}`;
+    return str;
 };
 /**
  * 聖遺物のスコア計算
@@ -395,9 +408,9 @@ const generate = async (character, calcType = "atk") => {
         let talentPaste = (0, sharp_utils_1.createImage)(talentBaseWidth, talentBaseHeight);
         let talent = (0, sharp_1.default)(path_1.default.join(characterPath, characterName, `${characterTalentKeys[i]}.png`))
             .resize(50, 50);
-        talentPaste = await composite(talentPaste, talent, Math.floor(talentBaseWidth / 2) - 25, Math.floor(talentBaseHeight / 2) - 25);
-        talentBase = await composite(talentBase, talentPaste, 0, 0);
-        talentBasePaste = await composite(talentBasePaste, talentBase, 15, 330 + i * 105);
+        talentPaste = await composite(talentPaste, talent, Math.floor(talentBaseWidth / 2) - 25, Math.floor(talentBaseHeight / 2) - 25) ?? talentPaste;
+        talentBase = await composite(talentBase, talentPaste, 0, 0) ?? talentBase;
+        talentBasePaste = await composite(talentBasePaste, talentBase, 15, 330 + i * 105) ?? talentBasePaste;
     }
     // 凸
     let constBase = (0, sharp_1.default)(path_1.default.join(constellationPath, `${characterElement}.png`))
@@ -407,16 +420,16 @@ const generate = async (character, calcType = "atk") => {
     let constBasePaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
     for (let i = 1; i < 7; i++) {
         if (i > characterConstellations.length) {
-            constBasePaste = await composite(constBasePaste, constLock, 666, -10 + i * 93);
+            constBasePaste = await composite(constBasePaste, constLock, 666, -10 + i * 93) ?? constBasePaste;
         }
         else {
             let charConst = (0, sharp_1.default)(path_1.default.join(characterPath, characterName, `constellations${i}.png`))
                 .resize(45, 45);
             let constPaste = (0, sharp_utils_1.createImage)(90, 90);
-            constPaste = await composite(constPaste, charConst, Math.floor(((await constPaste.metadata()).width ?? 0) / 2) - 25, Math.floor(((await constPaste.metadata()).height ?? 0) / 2) - 23);
+            constPaste = await composite(constPaste, charConst, Math.floor(((await constPaste.metadata()).width ?? 0) / 2) - 25, Math.floor(((await constPaste.metadata()).height ?? 0) / 2) - 23) ?? constPaste;
             let constBaseClone = constBase.clone();
-            constBaseClone = await composite(constBaseClone, constPaste, 0, 0);
-            constBasePaste = await composite(constBasePaste, constBaseClone, 666, -10 + i * 93);
+            constBaseClone = await composite(constBaseClone, constPaste, 0, 0) ?? constBaseClone;
+            constBasePaste = await composite(constBasePaste, constBaseClone, 666, -10 + i * 93) ?? constBasePaste;
         }
     }
     // 左上のテキスト等
@@ -592,6 +605,256 @@ const generate = async (character, calcType = "atk") => {
         { input: await convAsImage.toBuffer(), left: 1867 - ((await convAsImage.metadata()).width ?? 0), top: 585 },
         { input: await scoreBadge.toBuffer(), left: 1806, top: 345 }
     ]);
+    // 聖遺物
+    let artifactPreviewPaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
+    let artifactStatusPaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
+    for (let i = 0; i < artifacts.length; i++) {
+        let artifact = artifacts[i];
+        if (artifact === null)
+            continue;
+        let artifactMask = (0, sharp_1.default)(path_1.default.join(assetsPath, "ArtifactMask.png"))
+            .resize(332, 332);
+        let artifactImage = (0, sharp_1.default)(path_1.default.join(artifactPath, artifact.artifactData.set.name.get("jp"), `${artifactTypeMap[artifact.artifactData.equipType]}.png`))
+            .resize(332, 332)
+            .modulate({
+            brightness: 0.6,
+            saturation: 0.6
+        });
+        artifactImage = await (0, sharp_utils_1.mask)(artifactImage, artifactMask);
+        if (["flower", "crown"].includes(artifactTypeMap[artifact.artifactData.equipType])) {
+            artifactPreviewPaste = await composite(artifactPreviewPaste, artifactImage, -37 + 373 * i, 570) ?? artifactPreviewPaste;
+        }
+        else if (["wing", "cup"].includes(artifactTypeMap[artifact.artifactData.equipType])) {
+            artifactPreviewPaste = await composite(artifactPreviewPaste, artifactImage, -36 + 373 * i, 570) ?? artifactPreviewPaste;
+        }
+        else {
+            artifactPreviewPaste = await composite(artifactPreviewPaste, artifactImage, -35 + 373 * i, 570) ?? artifactPreviewPaste;
+        }
+        // メインOP
+        let mainStatus = artifact.mainstat;
+        let mainOpName = mainStatus.fightPropName.get("jp");
+        let mainOpValue = mainStatus.isPercent ?
+            commaSplittedNumber(mainStatus.getMultipliedValue(), 1) :
+            commaSplittedNumber(mainStatus.getMultipliedValue(), 0);
+        let mainOpIcon = (0, sharp_1.default)(path_1.default.join(emotePath, `${Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].long : mainOpName}.png`))
+            .resize(35, 35);
+        let mainOpNameImage = textToImage.getSharp(Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].short : mainOpName, "png", {
+            fontSize: 29,
+            y: -29
+        });
+        let mainOpValueImage = textToImage.getSharp(`${mainOpValue}${mainStatus.isPercent ? "%" : ""}`, "png", {
+            fontSize: 49,
+            y: -49
+        });
+        let artifactLevelImage = textToImage.getSharp(`+${artifact.level - 1}`, "png", {
+            fontSize: 21,
+            y: -21
+        });
+        let artifactLevelRect = (0, sharp_utils_1.roundedRect)(45, 24, 0, 0, 2);
+        artifactStatusPaste = await composite(artifactStatusPaste, [
+            {
+                input: await mainOpIcon.toBuffer(),
+                left: 340 + 373 * i - ((await mainOpNameImage.metadata()).width ?? 0),
+                top: 655
+            },
+            {
+                input: await mainOpNameImage.toBuffer(),
+                left: 375 + 373 * i - ((await mainOpNameImage.metadata()).width ?? 0),
+                top: 655
+            },
+            {
+                input: await mainOpValueImage.toBuffer(),
+                left: 375 + 373 * i - ((await mainOpValueImage.metadata()).width ?? 0),
+                top: 690
+            },
+            {
+                input: await artifactLevelRect.toBuffer(),
+                left: 373 + 373 * i - 43,
+                top: 748
+            },
+            {
+                input: await artifactLevelImage.toBuffer(),
+                left: 374 + 373 * i - ((await artifactLevelImage.metadata()).width ?? 0),
+                top: 749
+            }
+        ]) ?? artifactStatusPaste;
+        // サブOP
+        let subStatusTotal = artifact.substats.total;
+        let subStatusSplit = artifact.substats.split;
+        let subStatusGrowth = {};
+        subStatusSplit.forEach(growth => {
+            if (!subStatusGrowth[fightProp[growth.fightProp]]) {
+                subStatusGrowth[fightProp[growth.fightProp]] = [];
+            }
+            subStatusGrowth[fightProp[growth.fightProp]].push(growth.isPercent ?
+                commaSplittedNumber(growth.getMultipliedValue(), 1) :
+                String(Math.round(growth.getMultipliedValue())));
+        });
+        Object.keys(subStatusGrowth).forEach(type => subStatusGrowth[type] = subStatusGrowth[type].sort().join("+"));
+        for (let j = 0; j < subStatusTotal.length; j++) {
+            let subOpName = fightProp[subStatusTotal[j].fightProp];
+            let subOpValue = subStatusTotal[j].isPercent ?
+                commaSplittedNumber(subStatusTotal[j].getMultipliedValue(), 1) :
+                commaSplittedNumber(subStatusTotal[j].getMultipliedValue(), 0);
+            let subOpIcon = (0, sharp_1.default)(path_1.default.join(emotePath, `${Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].long : subOpName}.png`))
+                .resize(30, 30);
+            let subOpNameImage = textToImage.getSharp(Object.keys(statusNameMap).includes(subStatusTotal[j].fightPropName.get("jp")) && subStatusTotal[j].isPercent ? statusNameMap[subStatusTotal[j].fightPropName.get("jp")].short : subOpName, "png", {
+                fontSize: 25,
+                y: -25
+            });
+            let subOpValueImage = textToImage.getSharp(`${subOpValue}${subStatusTotal[j].isPercent ? "%" : ""}`, "png", {
+                fontSize: 25,
+                y: -25
+            });
+            let subOpGrowthImage = textToImage.getSharp(subStatusGrowth[subOpName], "png", {
+                fontSize: 11,
+                y: -11,
+                attributes: {
+                    fill: "rgba(255, 255, 255, 0.7)"
+                }
+            });
+            artifactStatusPaste = await composite(artifactStatusPaste, [
+                {
+                    input: await subOpIcon.toBuffer(),
+                    left: 44 + 373 * i,
+                    top: 811 + 50 * j
+                },
+                {
+                    input: await subOpNameImage.toBuffer(),
+                    left: 79 + 373 * i,
+                    top: 811 + 50 * j
+                },
+                {
+                    input: await subOpValueImage.toBuffer(),
+                    left: 375 + 373 * i - ((await subOpValueImage.metadata()).width ?? 0),
+                    top: 811 + 50 * j
+                },
+                {
+                    input: await subOpGrowthImage.toBuffer(),
+                    left: 375 + 373 * i - ((await subOpGrowthImage.metadata()).width ?? 0),
+                    top: 840 + 50 * j
+                }
+            ]) ?? artifactStatusPaste;
+        }
+        // スコア
+        let score = (0, exports.calcScore)(artifacts[i], calcType);
+        let scoreBadge;
+        if (score >= scoreRank[artifact.artifactData.equipType]["SS"]) {
+            scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "SS.png"));
+        }
+        else if (score >= scoreRank[artifact.artifactData.equipType]["S"]) {
+            scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "S.png"));
+        }
+        else if (score >= scoreRank[artifact.artifactData.equipType]["A"]) {
+            scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "A.png"));
+        }
+        else {
+            scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "B.png"));
+        }
+        scoreBadge.resize(Math.floor(((await scoreBadge.metadata()).width ?? 0) / 11));
+        let scoreText = textToImage.getSharp("Score", "png", {
+            fontSize: 27,
+            y: -27,
+            attributes: {
+                fill: "#A0A0A0"
+            }
+        });
+        let scoreImage = textToImage.getSharp(commaSplittedNumber(score, 1), "png", {
+            fontSize: 36,
+            y: -36
+        });
+        artifactStatusPaste = await composite(artifactStatusPaste, [
+            {
+                input: await scoreBadge.toBuffer(),
+                left: 85 + 373 * i,
+                top: 1013
+            },
+            {
+                input: await scoreText.toBuffer(),
+                left: 295 + 373 * i - ((await scoreImage.metadata()).width ?? 0),
+                top: 1025
+            },
+            {
+                input: await scoreImage.toBuffer(),
+                left: 380 + 373 * i - ((await scoreImage.metadata()).width ?? 0),
+                top: 1016
+            }
+        ]) ?? artifactStatusPaste;
+    }
+    let artifactSet = {};
+    artifacts.forEach(a => {
+        if (a !== null) {
+            artifactSet[a.artifactData.set.name.get("jp")] === undefined ?
+                artifactSet[a.artifactData.set.name.get("jp")] = 1 :
+                artifactSet[a.artifactData.set.name.get("jp")]++;
+        }
+    });
+    let setCount = Object.keys(artifactSet).filter(set => artifactSet[set] >= 2);
+    let setBonusPaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
+    for (let i = 0; i < setCount.length; i++) {
+        if (artifactSet[setCount[i]] >= 4) {
+            let setText = textToImage.getSharp(setCount[i], "png", {
+                fontSize: 23,
+                y: -23,
+                attributes: {
+                    fill: "#0F0"
+                }
+            });
+            let setCountRect = (0, sharp_utils_1.roundedRect)(44, 25, 0, 0, 1);
+            let setCountImage = textToImage.getSharp(String(artifactSet[setCount[i]]), "png", {
+                fontSize: 19,
+                y: -19
+            });
+            setBonusPaste = await composite(setBonusPaste, [
+                {
+                    input: await setText.toBuffer(),
+                    left: 1536,
+                    top: 263
+                },
+                {
+                    input: await setCountRect.toBuffer(),
+                    left: 1818,
+                    top: 263
+                },
+                {
+                    input: await setCountImage.toBuffer(),
+                    left: 1834,
+                    top: 265
+                }
+            ]) ?? setBonusPaste;
+        }
+        else if (artifactSet[setCount[i]] >= 2) {
+            let setText = textToImage.getSharp(setCount[i], "png", {
+                fontSize: 23,
+                y: -23,
+                attributes: {
+                    fill: "#0F0"
+                }
+            });
+            let setCountRect = (0, sharp_utils_1.roundedRect)(44, 25, 0, 0, 1);
+            let setCountImage = textToImage.getSharp(String(artifactSet[setCount[i]]), "png", {
+                fontSize: 19,
+                y: -19
+            });
+            setBonusPaste = await composite(setBonusPaste, [
+                {
+                    input: await setText.toBuffer(),
+                    left: 1536,
+                    top: 243 + 35 * i
+                },
+                {
+                    input: await setCountRect.toBuffer(),
+                    left: 1818,
+                    top: 243 + 35 * i
+                },
+                {
+                    input: await setCountImage.toBuffer(),
+                    left: 1834,
+                    top: 245 + 35 * i
+                }
+            ]) ?? setBonusPaste;
+        }
+    }
     return base.composite([
         { input: await characterPaste.toBuffer(), left: 0, top: 0 },
         { input: await shadow.toBuffer(), left: 0, top: 0 },
@@ -602,9 +865,9 @@ const generate = async (character, calcType = "atk") => {
         { input: await characterInfoPaste.toBuffer(), left: 0, top: 0 },
         { input: await characterStatusPaste.toBuffer(), left: 0, top: 0 },
         { input: await artifactScorePaste.toBuffer(), left: 0, top: 0 },
-        // { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
-        // { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
-        // { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }
+        { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0 },
+        { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0 },
+        { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }
     ]).toBuffer();
 };
 exports.generate = generate;

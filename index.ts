@@ -541,7 +541,6 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
             }
         }
     )
-    rectFriendShip.toFile("test/rect.png")
     let friendshipIcon = sharp(path.join(assetsPath, "Love.png"))
     friendshipIcon.resize(Math.floor(((await friendshipIcon.metadata()).width ?? 0) * (24 / ((await friendshipIcon.metadata()).height ?? 1))), 24, { fit: "fill" })
 

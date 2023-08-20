@@ -562,6 +562,36 @@ const generate = async (character, calcType = "atk") => {
         characterStatusPasteList.push({ input: await maxValueStatusIcon.toBuffer(), left: 787, top: 62 + 70 * 7 }, { input: await maxValueStatusNameImage.toBuffer(), left: 845, top: 67 + 70 * 7 }, { input: await maxValueStatusImage.toBuffer(), left: 1360 - ((await maxValueStatusImage.metadata()).width ?? 0), top: 67 + 70 * 7 });
     }
     characterStatusPaste.composite(characterStatusPasteList);
+    // 合計スコア
+    let artifactScorePaste = (0, sharp_utils_1.createImage)(baseSize.width, baseSize.height);
+    let scoreTotalImage = textToImage.getSharp(scoreTotal.toFixed(1), "png", {
+        fontSize: 75,
+        y: -75
+    });
+    let convAsImage = textToImage.getSharp(`${convAsMap[calcType]}換算`, "png", {
+        fontSize: 24,
+        y: -24
+    });
+    let scoreBadge;
+    if (scoreTotal >= scoreRank.total.SS) {
+        scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "SS.png"));
+    }
+    else if (scoreTotal >= scoreRank.total.S) {
+        scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "S.png"));
+    }
+    else if (scoreTotal >= scoreRank.total.A) {
+        scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "A.png"));
+    }
+    else {
+        scoreBadge = (0, sharp_1.default)(path_1.default.join(artifactGradePath, "B.png"));
+    }
+    scoreBadge.resize(Math.floor(((await scoreBadge.metadata()).width ?? 0) * 0.125));
+    artifactScorePaste
+        .composite([
+        { input: await scoreTotalImage.toBuffer(), left: 1652 - Math.floor(((await scoreTotalImage.metadata()).width ?? 0) / 2), top: 420 },
+        { input: await convAsImage.toBuffer(), left: 1867 - ((await convAsImage.metadata()).width ?? 0), top: 585 },
+        { input: await scoreBadge.toBuffer(), left: 1806, top: 345 }
+    ]);
     return base.composite([
         { input: await characterPaste.toBuffer(), left: 0, top: 0 },
         { input: await shadow.toBuffer(), left: 0, top: 0 },
@@ -571,7 +601,7 @@ const generate = async (character, calcType = "atk") => {
         { input: await constBasePaste.toBuffer(), left: 0, top: 0 },
         { input: await characterInfoPaste.toBuffer(), left: 0, top: 0 },
         { input: await characterStatusPaste.toBuffer(), left: 0, top: 0 },
-        // { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
+        { input: await artifactScorePaste.toBuffer(), left: 0, top: 0 },
         // { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
         // { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
         // { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }

@@ -690,6 +690,41 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
 
 
 
+    // 合計スコア
+    let artifactScorePaste = createImage(baseSize.width, baseSize.height)
+
+    let scoreTotalImage = textToImage.getSharp(scoreTotal.toFixed(1), "png", {
+        fontSize: 75,
+        y: -75
+    })
+    let convAsImage = textToImage.getSharp(`${ convAsMap[calcType] }換算`, "png", {
+        fontSize: 24,
+        y: -24
+    })
+
+    let scoreBadge
+    if(scoreTotal >= scoreRank.total.SS) {
+        scoreBadge = sharp(path.join(artifactGradePath, "SS.png"))
+    } else if(scoreTotal >= scoreRank.total.S) {
+        scoreBadge = sharp(path.join(artifactGradePath, "S.png"))
+    } else if(scoreTotal >= scoreRank.total.A) {
+        scoreBadge = sharp(path.join(artifactGradePath, "A.png"))
+    } else {
+        scoreBadge = sharp(path.join(artifactGradePath, "B.png"))
+    }
+    scoreBadge.resize(Math.floor(((await scoreBadge.metadata()).width ?? 0) * 0.125))
+
+    artifactScorePaste
+        .composite(
+            [
+                { input: await scoreTotalImage.toBuffer(), left: 1652 - Math.floor(((await scoreTotalImage.metadata()).width ?? 0) / 2), top: 420 },
+                { input: await convAsImage.toBuffer(), left: 1867 - ((await convAsImage.metadata()).width ?? 0), top: 585 },
+                { input: await scoreBadge.toBuffer(), left: 1806, top: 345 }
+            ]
+        )
+
+
+
     return base.composite(
         [
             { input: await characterPaste.toBuffer(), left: 0, top: 0 },
@@ -700,7 +735,7 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
             { input: await constBasePaste.toBuffer(), left: 0, top: 0},
             { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},
             { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
-            // { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
+            { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
             // { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
             // { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
             // { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }

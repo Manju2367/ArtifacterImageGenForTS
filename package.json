@@ -1,11 +1,11 @@
 {
-  "name": "aig.ts",
+  "name": "aig.js",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "npx tsc && node test/test.js",
-    "aig-dl": "npx tsc && node dlAssets.js"
+    "aig-dl": "node dlAssets.js"
   },
   "repository": {
     "type": "git",

@@ -165,6 +165,26 @@ const scoreRank: {
 
 
 /**
+ * 
+ * @param image1 
+ * @param image2 
+ * @param x 
+ * @param y 
+ * @returns 
+ */
+const composite = async (image1: sharp.Sharp, image2: sharp.Sharp, x=0, y=0) => {
+    if(image2 instanceof Array) {
+        return sharp(await sharp(await image1.toBuffer()).composite(image2).toBuffer()).png()
+    } else {
+        return sharp(await sharp(await image1.toBuffer()).composite([{
+            input: await image2.toBuffer(),
+            left: x,
+            top: y
+        }]).toBuffer()).png()
+    }
+}
+
+/**
  * 聖遺物のスコア計算
  * @param {Artifact} artifact 聖遺物
  * @param {ConvAs} type 換算
@@ -436,15 +456,128 @@ export const generate = async (character: Character, calcType: ConvAs = "atk"): 
 
 
 
+    // 天賦
+    let talentBasePaste = createImage(baseSize.width, baseSize.height)
+    let characterTalentKeys = Object.keys(characterTalent)
+    for(let i = 0; i < characterTalentKeys.length; i++) {
+        let talentBase = sharp(path.join(assetsPath, "TalentBack.png"))
+        talentBase.resize(Math.floor(((await talentBase.metadata()).width ?? 0) * 2/3))
+    
+        let talentBaseWidth = Math.floor(((await talentBase.metadata()).width ?? 0) * 2/3)
+        let talentBaseHeight = Math.floor(((await talentBase.metadata()).height ?? 0) * 2/3)
+        let talentPaste = createImage(talentBaseWidth, talentBaseHeight)
+        let talent = sharp(path.join(characterPath, characterName, `${ characterTalentKeys[i] }.png`))
+            .resize(50, 50)
+        talentPaste = await composite(talentPaste, talent, Math.floor(talentBaseWidth/2)-25, Math.floor(talentBaseHeight/2)-25)
+        talentBase = await composite(talentBase, talentPaste, 0, 0)
+        talentBasePaste = await composite(talentBasePaste, talentBase, 15, 330 + i*105)
+    }
+
+
+
+    // 凸
+    let constBase = sharp(path.join(constellationPath, `${ characterElement }.png`))
+        .resize(90, 90)
+    let constLock = sharp(path.join(constellationPath, `${ characterElement }LOCK.png`))
+        .resize(90, 90)
+    let constBasePaste = createImage(baseSize.width, baseSize.height)
+
+    for(let i = 1; i < 7; i++) {
+        if(i > characterConstellations.length) {
+            constBasePaste = await composite(constBasePaste, constLock, 666, -10 + i*93)
+        } else {
+            let charConst = sharp(path.join(characterPath, characterName, `constellations${ i }.png`))
+                .resize(45, 45)
+            let constPaste = createImage(90, 90)
+            constPaste = await composite(constPaste, charConst, Math.floor(((await constPaste.metadata()).width ?? 0) / 2) - 25, Math.floor(((await constPaste.metadata()).height ?? 0) / 2) - 23)
+        
+            let constBaseClone = constBase.clone()
+            constBaseClone = await composite(constBaseClone, constPaste, 0, 0)
+            constBasePaste = await composite(constBasePaste, constBaseClone, 666, -10 + i*93)
+        }
+    }
+
+
+
+    // 左上のテキスト等
+    let characterInfoPaste = createImage(baseSize.width, baseSize.height)
+    let characterNameImage = textToImage.getSharp(characterName, "png", {
+        fontSize: 48,
+        y: -48
+    })
+    let characterLevelImage = textToImage.getSharp(`Lv.${ characterLevel }`, "png", {
+        fontSize: 25,
+        y: -25
+    })
+    let friendshipImage = textToImage.getSharp(`${ characterFriendship }`, "png", {
+        fontSize: 25,
+        y: -25
+    })
+    let rectFriendShip = roundedRect(
+        77, 
+        102, 
+        35 + ((await characterLevelImage.metadata()).width ?? 0) + 5, 
+        74, 
+        2,
+        {
+            imageWidth: 77 + ((await characterLevelImage.metadata()).width ?? 0) + ((await friendshipImage.metadata()).width ?? 0),
+            imageHeight: 102,
+            fill: {
+                color: "#000000"
+            }
+        }
+    )
+    rectFriendShip.toFile("test/rect.png")
+    let friendshipIcon = sharp(path.join(assetsPath, "Love.png"))
+    friendshipIcon.resize(Math.floor(((await friendshipIcon.metadata()).width ?? 0) * (24 / ((await friendshipIcon.metadata()).height ?? 1))), 24, { fit: "fill" })
+
+    let normalAttackLevelImage = textToImage.getSharp(`Lv.${ characterTalent.normalAttack }`, "png", {
+        fontSize: 17,
+        y: -17,
+        attributes: {
+            fill: characterTalent.normalAttack >= 10 ? "#0FF" : "#FFF"
+        }
+    })
+    let elementalSkillLevelImage = textToImage.getSharp(`Lv.${ characterTalent.elementalSkill }`, "png", {
+        fontSize: 17,
+        y: -17,
+        attributes: {
+            fill: characterTalent.elementalSkill >= 10 ? "#0FF" : "#FFF"
+        }
+    })
+    let elementalBurstLevelImage = textToImage.getSharp(`Lv.${ characterTalent.elementalBurst }`, "png", {
+        fontSize: 17,
+        y: -17,
+        attributes: {
+            fill: characterTalent.elementalBurst >= 10 ? "#0FF" : "#FFF"
+        }
+    })
+
+    characterInfoPaste
+        .composite(
+            [
+                { input: await characterNameImage.toBuffer(), left: 30, top: 20 },
+                { input: await characterLevelImage.toBuffer(), left: 35, top: 75 },
+                { input: await rectFriendShip.toBuffer(), left: 0, top: 0 },
+                { input: await friendshipIcon.toBuffer(), left: 42 + Math.floor((await characterLevelImage.metadata()).width ?? 0), top: 76 },
+                { input: await friendshipImage.toBuffer(), left: 73 + ((await characterLevelImage.metadata()).width ?? 0), top: 74 },
+                { input: await normalAttackLevelImage.toBuffer(), left: 42, top: 397 },
+                { input: await elementalSkillLevelImage.toBuffer(), left: 42, top: 502 },
+                { input: await elementalBurstLevelImage.toBuffer(), left: 42, top: 607 }
+            ]
+        )
+
+
+
     return base.composite(
         [
             { input: await characterPaste.toBuffer(), left: 0, top: 0 },
             { input: await shadow.toBuffer(), left: 0, top: 0},
             { input: await weaponPaste.toBuffer(), left: 0, top: 0},
             { input: await weaponRarePaste.toBuffer(), left: 0, top: 0},
-            // { input: await talentBasePaste.toBuffer(), left: 0, top: 0},
-            // { input: await constBasePaste.toBuffer(), left: 0, top: 0},
-            // { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},
+            { input: await talentBasePaste.toBuffer(), left: 0, top: 0},
+            { input: await constBasePaste.toBuffer(), left: 0, top: 0},
+            { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},
             // { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
             // { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
             // { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},

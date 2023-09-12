@@ -1,8 +1,7 @@
 import path from "path"
-import { Artifact, Character, EnkaClient, EquipType, FightProp } from "enka-network-api"
+import { Artifact, Character, EquipType, FightProp } from "enka-network-api"
 import sharp from "sharp"
 import { TextToImage, mask, createImage, roundedRect } from "sharp-utils"
-import { exit } from "process"
 
 
 
@@ -209,7 +208,7 @@ export const calcScore = (artifact: Artifact|null, type: ConvAs = "atk"): number
 
     let score = 0
     artifact.substats.total.forEach(stat => {
-        let value = Math.floor(stat.getMultipliedValue() * 10) / 10
+        let value = Math.round(stat.getMultipliedValue() * 10) / 10
 
         // 会心率
         if(fightProp[stat.fightProp] === fightProp.FIGHT_PROP_CRITICAL) {

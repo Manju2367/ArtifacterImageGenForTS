@@ -1,7 +1,6 @@
 import path from "path"
 import { EnkaClient } from "enka-network-api"
-import { writeFileSync, existsSync, mkdirSync } from "fs"
-import axios from "axios"
+import { existsSync, mkdirSync } from "fs"
 import { downloadFile } from "./functions"
 
 

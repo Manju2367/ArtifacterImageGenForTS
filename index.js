@@ -182,7 +182,7 @@ const calcScore = (artifact, type = "atk") => {
         return 0;
     let score = 0;
     artifact.substats.total.forEach(stat => {
-        let value = Math.floor(stat.getMultipliedValue() * 10) / 10;
+        let value = Math.round(stat.getMultipliedValue() * 10) / 10;
         // 会心率
         if (fightProp[stat.fightProp] === fightProp.FIGHT_PROP_CRITICAL) {
             score += (value * 2);
@@ -453,7 +453,6 @@ const generate = async (character, calcType = "atk") => {
             color: "#000000"
         }
     });
-    rectFriendShip.toFile("test/rect.png");
     let friendshipIcon = (0, sharp_1.default)(path_1.default.join(assetsPath, "Love.png"));
     friendshipIcon.resize(Math.floor(((await friendshipIcon.metadata()).width ?? 0) * (24 / ((await friendshipIcon.metadata()).height ?? 1))), 24, { fit: "fill" });
     let normalAttackLevelImage = textToImage.getSharp(`Lv.${characterTalent.normalAttack}`, "png", {

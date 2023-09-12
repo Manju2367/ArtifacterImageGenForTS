@@ -8,6 +8,10 @@ export const downloadFile: Func.DownloadAssets = async (url, filepath) => {
         fetch(url, {
             method: "GET"
         }).then(async res => {
+            if(!res.ok) {
+                throw `Response error on download ${ url }`
+            }
+
             writeFile(filepath, Buffer.from(await res.arrayBuffer()), "binary")
         }).then(() => {
             resolve()

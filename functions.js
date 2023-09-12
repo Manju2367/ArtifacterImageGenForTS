@@ -7,6 +7,9 @@ const downloadFile = async (url, filepath) => {
         fetch(url, {
             method: "GET"
         }).then(async (res) => {
+            if (!res.ok) {
+                throw `Response error on download ${url}`;
+            }
             (0, promises_1.writeFile)(filepath, Buffer.from(await res.arrayBuffer()), "binary");
         }).then(() => {
             resolve();

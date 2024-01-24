@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Manju2367/ArtifacterImageGenForTS#readme",
   "dependencies": {
-    "@types/node": "^20.10.5",
+    "@types/node": "^20.11.6",
     "@types/text-to-svg": "^3.1.4",
     "enka-network-api": "^4.1.6",
     "sharp": "^0.32.6",
